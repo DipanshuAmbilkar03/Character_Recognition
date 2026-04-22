@@ -1,0 +1,53 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+myenv/
+CharacterRecoginition/myenv/
+
+# Jupyter / notebook cache
+.ipynb_checkpoints/
+
+# Build / packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# Local secrets and environment files
+.env
+.env.*
+*.env
+secrets.*
+*.pem
+*.key
+*.p12
+*.crt
+id_rsa
+id_ed25519
+
+# Logs
+*.log
+
+# OS/editor artifacts
+.DS_Store
+Thumbs.db
+.vscode/*.code-workspace
+
+# Vercel local state
+.vercel/
+
+# Ruff and other tool caches
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# Keep model by default (required for inference)
+# If you prefer retraining in CI instead of committing model, uncomment:
+# CharacterRecoginition/test-project/char_recognition.keras
+
+project-steps/
