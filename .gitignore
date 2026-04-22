@@ -46,6 +46,9 @@ Thumbs.db
 .pytest_cache/
 .mypy_cache/
 
+# Local conversion temp artifacts
+_saved_model_tmp/
+
 # Keep model by default (required for inference)
 # If you prefer retraining in CI instead of committing model, uncomment:
 # CharacterRecoginition/test-project/char_recognition.keras

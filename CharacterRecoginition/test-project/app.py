@@ -3,11 +3,11 @@ from flask import Flask, render_template, request, jsonify
 import numpy as np
 from PIL import Image, ImageOps
 import io
-import tensorflow as tf
-from model_utils import load_model_compat
+import onnxruntime as ort
 
 app = Flask(__name__)
-model = load_model_compat('char_recognition.keras')
+session = ort.InferenceSession('char_recognition.onnx', providers=['CPUExecutionProvider'])
+input_name = session.get_inputs()[0].name
 
 def preprocess_image(image_bytes):
     # Convert bytes to PIL Image
@@ -31,7 +31,7 @@ def preprocess_image(image_bytes):
     ))
     
     # Convert to numpy array
-    img_array = np.array(processed_img) / 255.0
+    img_array = np.array(processed_img, dtype=np.float32) / 255.0
     return img_array.reshape(1, 28, 28, 1)
 
 @app.route('/')
@@ -46,7 +46,7 @@ def predict():
     image_file = request.files['image']
     try:
         img_array = preprocess_image(image_file.read())
-        predictions = model.predict(img_array)
+        predictions = session.run(None, {input_name: img_array})[0]
         predicted_class = str(np.argmax(predictions))
         confidence = float(np.max(predictions))
         return jsonify({
