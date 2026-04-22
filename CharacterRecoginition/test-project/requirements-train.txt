@@ -1,0 +1,8 @@
+tensorflow
+numpy
+matplotlib
+Pillow
+tf2onnx
+onnx
+onnxruntime
+Flask
