@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bilingual Digit Recognition</title>
+  <style>
+    :root {
+      --bg: #f7f2e8;
+      --card: #fffdf5;
+      --ink: #1e1b16;
+      --accent: #0f6d8c;
+      --accent-2: #db7b2b;
+      --muted: #5f5a52;
+      --border: #e2d7c4;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 8%, #ffefd0 0, transparent 36%),
+        radial-gradient(circle at 90% 84%, #d7effb 0, transparent 42%),
+        var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .panel {
+      width: min(900px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.08);
+      padding: 24px;
+      display: grid;
+      gap: 20px;
+      animation: rise 360ms ease-out;
+    }
+
+    @keyframes rise {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.3rem, 2.6vw, 1.9rem);
+      letter-spacing: 0.3px;
+    }
+
+    .subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 760px) {
+      .workspace { grid-template-columns: 1fr; }
+    }
+
+    .canvas-wrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      padding: 12px;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      border: 1px dashed #bbb;
+      border-radius: 8px;
+      touch-action: none;
+      cursor: crosshair;
+      background: white;
+    }
+
+    .actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .predict {
+      background: var(--accent);
+      color: white;
+    }
+
+    .clear {
+      background: var(--accent-2);
+      color: white;
+    }
+
+    .result {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .big {
+      font-size: 2.3rem;
+      font-weight: 900;
+      margin: 6px 0;
+    }
+
+    .small { color: var(--muted); }
+
+    .meta {
+      margin: 8px 0;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fffaf2;
+      font-size: 0.92rem;
+      color: #3b352e;
+    }
+
+    .probs {
+      margin-top: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 22px 1fr 54px;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: #ece9df;
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #3db5d1);
+      width: 0;
+      transition: width 220ms ease;
+    }
+
+    .error {
+      color: #b42318;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <header>
+      <h1>Handwritten Hindi + English Digit Recognition</h1>
+      <p class="subtitle">Draw one digit. The app runs both models and auto-selects Hindi or English prediction.</p>
+    </header>
+
+    <section class="workspace">
+      <div class="canvas-wrap">
+        <canvas id="board" width="280" height="280" aria-label="Drawing canvas"></canvas>
+        <div class="actions">
+          <button class="predict" id="predictBtn" type="button">Predict</button>
+          <button class="clear" id="clearBtn" type="button">Clear</button>
+        </div>
+      </div>
+
+      <div class="result" id="result">
+        <div class="small">Predicted Digit (Auto)</div>
+        <div class="big" id="digit">-</div>
+        <div class="small" id="confidence">Confidence: -</div>
+        <div class="meta" id="scriptInfo">Model decision: -</div>
+        <div class="probs" id="probs"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+    const englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const predictBtn = document.getElementById('predictBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const digitEl = document.getElementById('digit');
+    const confidenceEl = document.getElementById('confidence');
+    const scriptInfoEl = document.getElementById('scriptInfo');
+    const probsEl = document.getElementById('probs');
+
+    let drawing = false;
+
+    function resetCanvas() {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = 18;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'black';
+    }
+
+    function pointerPos(event) {
+      const rect = canvas.getBoundingClientRect();
+      const source = event.touches ? event.touches[0] : event;
+      return {
+        x: (source.clientX - rect.left) * (canvas.width / rect.width),
+        y: (source.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function startDraw(event) {
+      event.preventDefault();
+      drawing = true;
+      const { x, y } = pointerPos(event);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    function draw(event) {
+      if (!drawing) return;
+      event.preventDefault();
+      const { x, y } = pointerPos(event);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+
+    function endDraw() {
+      drawing = false;
+      ctx.beginPath();
+    }
+
+    async function predict() {
+      predictBtn.disabled = true;
+      predictBtn.textContent = 'Predicting...';
+
+      try {
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const formData = new FormData();
+        formData.append('image', blob, 'drawing.png');
+
+        const response = await fetch('/predict', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+          digitEl.textContent = 'Error';
+          confidenceEl.innerHTML = '<span class="error">' + (data.error || 'Prediction failed') + '</span>';
+          scriptInfoEl.textContent = 'Model decision: -';
+          probsEl.innerHTML = '';
+          return;
+        }
+
+        digitEl.textContent = data.prediction;
+        confidenceEl.textContent = 'Confidence: ' + (data.confidence * 100).toFixed(2) + '%';
+
+        const selected = data.selected_script === 'hindi' ? 'Hindi' : 'English';
+        scriptInfoEl.textContent =
+          'Model decision: ' + selected +
+          ' | Hindi: ' + (data.hindi.confidence * 100).toFixed(2) + '%' +
+          ' | English: ' + (data.english.confidence * 100).toFixed(2) + '%';
+
+        probsEl.innerHTML = '';
+        data.probabilities.forEach((p, i) => {
+          const row = document.createElement('div');
+          const label = data.selected_script === 'hindi' ? devanagariDigits[i] : englishDigits[i];
+          row.className = 'row';
+          row.innerHTML =
+            '<span>' + label + '</span>' +
+            '<div class="bar"><div class="fill" style="width:' + (p * 100).toFixed(2) + '%"></div></div>' +
+            '<span>' + (p * 100).toFixed(1) + '%</span>';
+          probsEl.appendChild(row);
+        });
+      } catch (error) {
+        digitEl.textContent = 'Error';
+        confidenceEl.innerHTML = '<span class="error">' + error.message + '</span>';
+        scriptInfoEl.textContent = 'Model decision: -';
+        probsEl.innerHTML = '';
+      } finally {
+        predictBtn.disabled = false;
+        predictBtn.textContent = 'Predict';
+      }
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', endDraw);
+
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    window.addEventListener('touchend', endDraw);
+
+    clearBtn.addEventListener('click', () => {
+      resetCanvas();
+      digitEl.textContent = '-';
+      confidenceEl.textContent = 'Confidence: -';
+      scriptInfoEl.textContent = 'Model decision: -';
+      probsEl.innerHTML = '';
+    });
+
+    predictBtn.addEventListener('click', predict);
+
+    resetCanvas();
+  </script>
+</body>
+</html>

@@ -54,3 +54,5 @@ _saved_model_tmp/
 # CharacterRecoginition/test-project/char_recognition.keras
 
 project-steps/
+*devanagari number data/
+CharacterRecoginition/devanagari number data/Images.zip

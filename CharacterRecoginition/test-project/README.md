@@ -99,3 +99,75 @@ No custom install command is needed now. Vercel will install from `requirements.
 
 - The current model is MNIST-based digit recognition (not full A-Z/a-z/alphanumeric classification).
 - Image preprocessing in `app.py` and `predict.py` converts transparent backgrounds, inverts colors, resizes to 28x28, and centers the digit.
+
+## Separate Hindi (Devanagari) Digit Model
+
+This project now also supports a separate Devanagari digit recognizer trained from:
+
+- `../devanagari number data/hindi numbers/digit_0 ... digit_9`
+
+No English and Hindi model files are mixed.
+
+- English model files:
+	- `char_recognition.keras`
+	- `char_recognition.onnx`
+- Hindi model files:
+	- `char_recognition_hindi.keras`
+	- `char_recognition_hindi.onnx`
+
+### Train Hindi model
+
+```powershell
+python .\models_hindi.py
+```
+
+### Convert Hindi model to ONNX
+
+```powershell
+python .\convert_to_onnx_hindi.py
+```
+
+### Run Hindi Flask app
+
+```powershell
+python .\app_hindi.py
+```
+
+Then open:
+
+- http://127.0.0.1:5000/
+
+### Predict Hindi digit from local image
+
+```powershell
+python .\predict_hindi.py path\to\image.png
+```
+
+## Production Directory Structure
+
+Keep only deployment/runtime files in production push:
+
+```text
+test-project/
+	api/
+		index_hindi.py
+	templates/
+		index_hindi.html
+	app_hindi.py
+	app.py
+	hindi_preprocess.py
+	char_recognition.onnx
+	char_recognition_hindi.onnx
+	requirements.txt
+	vercel.json
+	.vercelignore
+	README.md
+```
+
+## Private and Local Files (Do Not Push)
+
+- Virtual environments: `venv/`, `.venv/`, `myenv/`
+- Cache/build files: `__pycache__/`, `.ipynb_checkpoints/`, `*.pyc`
+- Local secrets: `.env`
+- Training-only files: `models.py`, `models_hindi.py`, `predict.py`, `predict_hindi.py`, `convert_to_onnx.py`, `convert_to_onnx_hindi.py`, `requirements-train.txt`, `project-steps/`
+- Keras training artifacts: `*.keras`

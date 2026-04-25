@@ -1,13 +1,19 @@
-.ipynb_checkpoints/
+# Python caches
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
+
+# Local environments and secrets
 .env
 venv/
 .venv/
 myenv/
-project-steps/
+
+# Notebook/cache folders
+.ipynb_checkpoints/
+
+# Training-only artifacts (exclude from production repo)
 *.keras
 models.py
 models_hindi.py
@@ -16,3 +22,4 @@ predict_hindi.py
 convert_to_onnx.py
 convert_to_onnx_hindi.py
 requirements-train.txt
+project-steps/
